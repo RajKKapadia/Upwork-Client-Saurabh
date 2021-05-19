@@ -41,32 +41,65 @@ const userProvidesRoomType = async (req) => {
     }
 
     return {
-        fulfillmentText: outString
+        fulfillmentText: JSON.stringify({
+            text: outString,
+            buttons: ['Book a room', 'Connect with agent']
+        })
     };
 };
 
 // Handle userAsksForRoomTypes
-const userAsksForRoomTypes = async (req) => {
-
-    let room_type = req.body.queryResult.parameters.room_type;
+const userAsksForRoomTypes = async () => {
 
     let response = await axios.get(`${BASE_URL}//rooms.types.list`);
     let roomTypes = response.data.roomTypes;
-    let outString = 'We have ';
+    let outString = 'We have following type of rooms in our premisses.';
+    let buttons = [];
     
     for (let index = 0; index < roomTypes.length; index++) {
         const rt = roomTypes[index];
-        if (index == roomTypes.length - 1) {
-            outString += `and ${rt}`;
-        } else {
-            outString += `${rt}, `;
-        }
+        buttons.push(rt);
     }
 
-    outString += ' rooms in our premisses.'
+    return {
+        fulfillmentText: JSON.stringify({
+            text: outString,
+            buttons: buttons
+        })
+    };
+};
+
+// Handle userAsksForPricing
+const userAsksForPricing = async () => {
+
+    let response = await axios.get(`${BASE_URL}//rooms.types.list`);
+    let roomTypes = response.data.roomTypes;
+    let outString = 'I can help you with that, which type of room are you looking for?';
+    let buttons = [];
+    
+    for (let index = 0; index < roomTypes.length; index++) {
+        const rt = roomTypes[index];
+        buttons.push(rt);
+    }
 
     return {
-        fulfillmentText: outString
+        fulfillmentText: JSON.stringify({
+            text: outString,
+            buttons: buttons
+        })
+    };
+};
+
+// Handle userProvideName
+const userProvideName = (req) => {
+
+    let person = req.body.queryResult.parameters.person.name;
+
+    return {
+        fulfillmentText: JSON.stringify({
+            text: `Thank you ${person}, what is email address?`,
+            buttons: []
+        })
     };
 };
 
@@ -74,18 +107,42 @@ const userAsksForRoomTypes = async (req) => {
 webApp.post('/webhook', async (req, res) => {
 
     let action = req.body.queryResult.action;
+    console.log('Webhook called.');
+    console.log(`Action name --> ${action}`);
+    console.log(`Session --> ${req.body.session}`);
 
     let responseData = {};
 
     if (action === 'userProvidesRoomType') {
         responseData = await userProvidesRoomType(req);
     } else if (action === 'userAsksForRoomTypes') {
-        responseData = await userAsksForRoomTypes(req);
+        responseData = await userAsksForRoomTypes();
+    } else if (action === 'userAsksForPricing') {
+        responseData = await userAsksForPricing();
+    } else if (action === 'userProvideName') {
+        responseData = userProvideName(req);
     } else {
         responseData['fulfillmentText'] = 'Unknown action called.'
     }
 
     res.send(responseData);
+});
+
+const DF = require('../helper-functions/dialogflow_apicalls');
+
+// Website route
+webApp.post('/website', async (req, res) => {
+
+    let queryText = req.body.queryText;
+    let sessionId = req.body.sessionId;
+    let languageCode = req.body.languageCode;
+
+    let intentData = await DF.detectIntent(queryText, sessionId, languageCode);
+    if (intentData.status == 200) {
+        res.json(JSON.parse(intentData.data));
+    } else {
+        res.status(400).send('Invalid input data');
+    }
 });
 
 // Start the server
