@@ -93,7 +93,7 @@ const userAsksForPricing = async () => {
 // Handle userProvideName
 const userProvideName = (req) => {
 
-    let person = req.body.queryResult.parameters.person.name;
+    let person = req.body.queryResult.parameters.person;
 
     return {
         fulfillmentText: JSON.stringify({
