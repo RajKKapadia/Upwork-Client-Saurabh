@@ -31,7 +31,7 @@ const userProvidesRoomType = async (req) => {
     let roomTypes = response.data.roomTypes;
     let outString = '';
     roomTypes.forEach(rt => {
-        if (rt.room_type === room_type) {
+        if (rt.room_type.toLowerCase() === room_type.toLowerCase()) {
             outString += `The per night rate for ${room_type} is ${rt.price} rupees.`;
         }
     });
